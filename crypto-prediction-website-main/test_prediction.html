@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Prediction</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input, select { padding: 8px; margin: 5px 0; width: 200px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Prediction System</h1>
+        
+        <div class="form-group">
+            <label for="crypto-select">Cryptocurrency:</label>
+            <select id="crypto-select">
+                <option value="BTC">Bitcoin (BTC)</option>
+                <option value="ETH">Ethereum (ETH)</option>
+                <option value="ADA">Cardano (ADA)</option>
+                <option value="BNB">Binance Coin (BNB)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="days-ahead">Days Ahead (0-30):</label>
+            <input type="number" id="days-ahead" value="1" min="0" max="30">
+        </div>
+        
+        <div class="form-group">
+            <label for="hours-ahead">Hours Ahead (0-23):</label>
+            <input type="number" id="hours-ahead" value="2" min="0" max="23">
+        </div>
+        
+        <div class="form-group">
+            <label for="current-price">Current Price (optional):</label>
+            <input type="number" id="current-price" placeholder="Auto-fetch if empty" step="0.01">
+        </div>
+        
+        <button id="predict-btn" onclick="testPrediction()">Generate Prediction</button>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function testPrediction() {
+            const resultDiv = document.getElementById('result');
+            const predictBtn = document.getElementById('predict-btn');
+            
+            try {
+                // Get form values
+                const selectedCrypto = document.getElementById('crypto-select').value;
+                const daysAhead = parseInt(document.getElementById('days-ahead').value) || 0;
+                const hoursAhead = parseInt(document.getElementById('hours-ahead').value) || 0;
+                const currentPrice = document.getElementById('current-price').value ? 
+                    Number.parseFloat(document.getElementById('current-price').value) : null;
+
+                console.log('Testing with:', { selectedCrypto, daysAhead, hoursAhead, currentPrice });
+
+                // Show loading
+                predictBtn.textContent = 'Generating...';
+                predictBtn.disabled = true;
+                resultDiv.style.display = 'none';
+
+                // Prepare request
+                const requestBody = {
+                    symbol: selectedCrypto,
+                    days_ahead: daysAhead,
+                    hours_ahead: hoursAhead
+                };
+                
+                if (currentPrice) {
+                    requestBody.current_price = currentPrice;
+                }
+
+                // Make API call
+                const response = await fetch(`/api/predict/${selectedCrypto.toLowerCase()}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response:', data);
+
+                // Display results
+                let resultHTML = '<h3>Prediction Results</h3>';
+                resultHTML += `<p><strong>Symbol:</strong> ${data.symbol}</p>`;
+                
+                if (data.current_price) {
+                    resultHTML += `<p><strong>Current Price:</strong> $${data.current_price.toLocaleString()}</p>`;
+                }
+                
+                if (data.daily_prediction) {
+                    resultHTML += `<p><strong>Daily Prediction (INR):</strong> ₹${data.daily_prediction.predicted_price.toLocaleString()} (${data.daily_prediction.days_ahead} days ahead)</p>`;
+                }
+                
+                if (data.hourly_prediction) {
+                    resultHTML += `<p><strong>Hourly Prediction (USDT):</strong> $${data.hourly_prediction.predicted_price.toLocaleString()} (${data.hourly_prediction.hours_ahead} hours ahead)</p>`;
+                }
+                
+                if (data.daily_error) {
+                    resultHTML += `<p><strong>Daily Error:</strong> ${data.daily_error}</p>`;
+                }
+                
+                if (data.hourly_error) {
+                    resultHTML += `<p><strong>Hourly Error:</strong> ${data.hourly_error}</p>`;
+                }
+
+                resultDiv.innerHTML = resultHTML;
+                resultDiv.className = 'result success';
+                resultDiv.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<h3>Error</h3><p>${error.message}</p>`;
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+            } finally {
+                predictBtn.textContent = 'Generate Prediction';
+                predictBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
