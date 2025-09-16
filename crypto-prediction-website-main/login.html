@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - FutureCoin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .login-container { max-width: 420px; margin: 80px auto; padding: 24px; background: #0b1220; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);} 
+        .login-title { text-align: center; margin-bottom: 16px; }
+        .login-form label { display:block; margin: 12px 0 6px; }
+        .login-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #223; background: #0d1628; color: #fff; }
+        .login-actions { margin-top: 16px; display:flex; gap:12px; }
+        .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
+        .btn-primary { background:#3b82f6; color:#fff; }
+        .btn-secondary { background:#111827; color:#e5e7eb; border:1px solid #374151; }
+        .error { color:#f87171; margin-top:10px; min-height:20px; }
+    </style>
+    <script>
+        async function attemptLogin(ev){
+            ev.preventDefault();
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value.trim();
+            const btn = document.getElementById('login-btn');
+            const err = document.getElementById('error');
+            err.textContent = '';
+            btn.disabled = true; btn.textContent = 'Signing in...';
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+                if (res.ok && data.ok){
+                    const to = new URLSearchParams(window.location.search).get('to') || 'predictions.html';
+                    window.location.href = to;
+                } else {
+                    err.textContent = data.error || 'Login failed';
+                }
+            } catch(e){
+                err.textContent = 'Network error. Please try again.';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Login';
+            }
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('login-form').addEventListener('submit', attemptLogin);
+        });
+    </script>
+    </head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-chart-line"></i>
+                <span>FutureCoin</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+                <li class="nav-item"><a href="predictions.html" class="nav-link">Predictions</a></li>
+                <li class="nav-item"><a href="compare.html" class="nav-link">Compare Models</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+            </ul>
+        </div>
+    </nav>
+    <main>
+        <div class="login-container">
+            <div class="login-title">
+                <h2><i class="fas fa-user-lock"></i> Sign in</h2>
+                <p>Use the credentials configured in the server</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" placeholder="admin" required>
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" placeholder="admin" required>
+                <div class="login-actions">
+                    <button id="login-btn" class="btn btn-primary" type="submit">Login</button>
+                    <a class="btn btn-secondary" href="index.html">Cancel</a>
+                </div>
+                <div class="error" id="error"></div>
+            </form>
+        </div>
+    </main>
+    <footer class="footer"><div class="container"><div class="footer-bottom"><p>&copy; 2024 FutureCoin</p></div></div></footer>
+</body>
+</html>
+
+

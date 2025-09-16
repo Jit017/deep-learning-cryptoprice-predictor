@@ -1,5 +1,26 @@
 // Mobile Navigation Toggle
 document.addEventListener("DOMContentLoaded", () => {
+  // Session guard for protected pages
+  try {
+    const path = window.location.pathname
+    const requiresAuth = path.endsWith('/predictions.html') || path.endsWith('/compare.html')
+    if (requiresAuth) {
+      fetch('/api/session')
+        .then((r) => r.json())
+        .then((s) => {
+          if (!s || !s.authenticated) {
+            const redirect = encodeURIComponent(path.replace(/^\/+/, ''))
+            window.location.href = `login.html?to=${redirect}`
+          }
+        })
+        .catch(() => {
+          const redirect = encodeURIComponent(path.replace(/^\/+/, ''))
+          window.location.href = `login.html?to=${redirect}`
+        })
+    }
+  } catch (_) {
+    // ignore
+  }
   const hamburger = document.querySelector(".hamburger")
   const navMenu = document.querySelector(".nav-menu")
 

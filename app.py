@@ -7,7 +7,7 @@ import requests
 import pandas as pd
 import yfinance as yf
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 import joblib
 import pickle
 import numpy as np
@@ -88,6 +88,9 @@ app = Flask(
     static_folder=str(FRONTEND_DIR),
     static_url_path="/",
 )
+
+# Secret key for session management
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-in-env")
 
 _loaded_models: Dict[str, Any] = {}
 _model_meta: Dict[str, Dict[str, Any]] = {}
@@ -329,8 +332,38 @@ def model_details():
     return jsonify(_model_meta)
 
 
+@app.route("/api/session", methods=["GET"])
+def session_status():
+    user = session.get("user")
+    return jsonify({"authenticated": bool(user), "user": user})
+
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    payload = request.get_json(silent=True) or {}
+    username = (payload.get("username") or "").strip()
+    password = (payload.get("password") or "").strip()
+
+    env_user = os.getenv("APP_USERNAME", "admin")
+    env_pass = os.getenv("APP_PASSWORD", "admin")
+
+    if username == env_user and password == env_pass:
+        session["user"] = username
+        return jsonify({"ok": True, "user": username})
+    return jsonify({"ok": False, "error": "Invalid credentials"}), 401
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.pop("user", None)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/predict/<model_name>", methods=["POST"])
 def predict(model_name: str):
+    # Optional guard: require authenticated session
+    if not session.get("user"):
+        return jsonify({"error": "Unauthorized"}), 401
     payload = request.get_json(silent=True) or {}
     
     # Extract parameters
