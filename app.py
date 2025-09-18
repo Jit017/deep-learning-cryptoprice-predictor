@@ -39,6 +39,17 @@ BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR / "crypto-prediction-website-main"
 MODELS_DIR = BASE_DIR / "models"
 
+# Async evaluation (optional)
+USE_ASYNC_EVAL = os.getenv("USE_ASYNC_EVAL", "0") == "1"
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+celery = None
+if USE_ASYNC_EVAL:
+    try:
+        from celery import Celery  # type: ignore
+        celery = Celery(__name__, broker=REDIS_URL, backend=REDIS_URL)
+    except Exception as _e:
+        celery = None
+
 # Load configuration
 def load_config():
     config = {
@@ -138,6 +149,24 @@ def init_db() -> None:
                 )
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS prediction_evaluations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    prediction_id INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    symbol TEXT NOT NULL,
+                    target_time TEXT NOT NULL,
+                    actual_price REAL NOT NULL,
+                    daily_prediction REAL,
+                    hourly_prediction REAL,
+                    mae REAL,
+                    ape REAL,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (prediction_id) REFERENCES predictions(id)
+                )
+                """
+            )
             conn.commit()
     except Exception as e:
         print(f"DB init error: {e}")
@@ -164,7 +193,7 @@ def insert_prediction_event(
     hourly_prediction: Optional[float],
     request_payload: Dict[str, Any],
     response_payload: Dict[str, Any],
-) -> None:
+) -> int:
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cur = conn.cursor()
@@ -189,9 +218,10 @@ def insert_prediction_event(
                 ),
             )
             conn.commit()
+            return cur.lastrowid
     except Exception as e:
         print(f"DB prediction insert error: {e}")
-
+    return 0
 _loaded_models: Dict[str, Any] = {}
 _model_meta: Dict[str, Dict[str, Any]] = {}
 
@@ -639,7 +669,7 @@ def predict(model_name: str):
     try:
         current_user = session.get("user")
         if current_user:
-            insert_prediction_event(
+            prediction_id = insert_prediction_event(
                 username=current_user,
                 symbol=symbol,
                 days_ahead=days_ahead,
@@ -649,6 +679,29 @@ def predict(model_name: str):
                 request_payload=payload,
                 response_payload=response_obj,
             )
+            response_obj["prediction_id"] = prediction_id
+            # Schedule async evaluation if enabled
+            if USE_ASYNC_EVAL and celery and prediction_id:
+                target_seconds = 0
+                if days_ahead > 0:
+                    target_seconds = int(days_ahead * 24 * 3600)
+                elif hours_ahead > 0:
+                    target_seconds = int(hours_ahead * 3600)
+                if target_seconds > 0:
+                    try:
+                        celery.send_task(
+                            "tasks.evaluate_prediction",
+                            args=[
+                                prediction_id,
+                                current_user,
+                                symbol.upper(),
+                                response_obj.get("daily_prediction", {}).get("predicted_price"),
+                                response_obj.get("hourly_prediction", {}).get("predicted_price"),
+                            ],
+                            countdown=target_seconds,
+                        )
+                    except Exception as e:
+                        print(f"Failed to schedule evaluation: {e}")
     except Exception as e:
         print(f"Prediction audit error: {e}")
 
