@@ -8,6 +8,8 @@ import pandas as pd
 import yfinance as yf
 
 from flask import Flask, jsonify, request, send_from_directory, session
+import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
 import joblib
 import pickle
 import numpy as np
@@ -91,6 +93,104 @@ app = Flask(
 
 # Secret key for session management
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "change-this-secret-in-env")
+
+# --- SQLite setup for login audit ---
+DB_PATH = BASE_DIR / "app.db"
+
+def init_db() -> None:
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS logins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    ip TEXT,
+                    user_agent TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT NOT NULL,
+                    symbol TEXT NOT NULL,
+                    days_ahead INTEGER NOT NULL,
+                    hours_ahead INTEGER NOT NULL,
+                    daily_prediction REAL,
+                    hourly_prediction REAL,
+                    request_payload TEXT,
+                    response_payload TEXT,
+                    created_at TEXT NOT NULL
+                )
+                """
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"DB init error: {e}")
+
+def insert_login_event(username: str, ip: str, user_agent: str) -> None:
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO logins (username, ip, user_agent, created_at) VALUES (?, ?, ?, ?)",
+                (username, ip, user_agent, datetime.utcnow().isoformat()),
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"DB insert error: {e}")
+
+
+def insert_prediction_event(
+    username: str,
+    symbol: str,
+    days_ahead: int,
+    hours_ahead: int,
+    daily_prediction: Optional[float],
+    hourly_prediction: Optional[float],
+    request_payload: Dict[str, Any],
+    response_payload: Dict[str, Any],
+) -> None:
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO predictions (
+                    username, symbol, days_ahead, hours_ahead,
+                    daily_prediction, hourly_prediction,
+                    request_payload, response_payload, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    username,
+                    symbol.upper(),
+                    int(days_ahead),
+                    int(hours_ahead),
+                    float(daily_prediction) if daily_prediction is not None else None,
+                    float(hourly_prediction) if hourly_prediction is not None else None,
+                    json.dumps(request_payload, ensure_ascii=False),
+                    json.dumps(response_payload, ensure_ascii=False),
+                    datetime.utcnow().isoformat(),
+                ),
+            )
+            conn.commit()
+    except Exception as e:
+        print(f"DB prediction insert error: {e}")
 
 _loaded_models: Dict[str, Any] = {}
 _model_meta: Dict[str, Dict[str, Any]] = {}
@@ -324,11 +424,15 @@ def health():
 
 @app.route("/api/models")
 def list_models():
+    if not _loaded_models:
+        load_models()
     return jsonify(sorted(list(_loaded_models.keys())))
 
 
 @app.route("/api/models/details")
 def model_details():
+    if not _loaded_models:
+        load_models()
     return jsonify(_model_meta)
 
 
@@ -347,9 +451,35 @@ def login():
     env_user = os.getenv("APP_USERNAME", "admin")
     env_pass = os.getenv("APP_PASSWORD", "admin")
 
+    # Admin login via env variables
     if username == env_user and password == env_pass:
         session["user"] = username
+        # audit record
+        try:
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+            ua = request.headers.get("User-Agent", "")
+            insert_login_event(username, ip, ua)
+        except Exception as e:
+            print(f"Login audit error: {e}")
         return jsonify({"ok": True, "user": username})
+
+    # Regular user login via SQLite users table
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT password_hash FROM users WHERE username = ?", (username,))
+            row = cur.fetchone()
+            if row and check_password_hash(row[0], password):
+                session["user"] = username
+                try:
+                    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "")
+                    ua = request.headers.get("User-Agent", "")
+                    insert_login_event(username, ip, ua)
+                except Exception as e:
+                    print(f"Login audit error: {e}")
+                return jsonify({"ok": True, "user": username})
+    except Exception as e:
+        print(f"DB login error: {e}")
     return jsonify({"ok": False, "error": "Invalid credentials"}), 401
 
 
@@ -357,6 +487,31 @@ def login():
 def logout():
     session.pop("user", None)
     return jsonify({"ok": True})
+
+
+@app.route("/api/register", methods=["POST"])
+def register():
+    payload = request.get_json(silent=True) or {}
+    username = (payload.get("username") or "").strip()
+    password = (payload.get("password") or "").strip()
+    if not username or not password:
+        return jsonify({"ok": False, "error": "username and password required"}), 400
+    if len(password) < 6:
+        return jsonify({"ok": False, "error": "password must be at least 6 characters"}), 400
+    try:
+        pwd_hash = generate_password_hash(password)
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)",
+                (username, pwd_hash, datetime.utcnow().isoformat()),
+            )
+            conn.commit()
+        return jsonify({"ok": True, "user": username})
+    except sqlite3.IntegrityError:
+        return jsonify({"ok": False, "error": "username already exists"}), 409
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @app.route("/api/predict/<model_name>", methods=["POST"])
@@ -474,11 +629,30 @@ def predict(model_name: str):
                 "model_type": "fallback"
             }
     
-    return jsonify({
+    response_obj = {
         "symbol": symbol.upper(),
         "timestamp": datetime.now().isoformat(),
         **results
-    })
+    }
+
+    # Persist prediction event if user is authenticated
+    try:
+        current_user = session.get("user")
+        if current_user:
+            insert_prediction_event(
+                username=current_user,
+                symbol=symbol,
+                days_ahead=days_ahead,
+                hours_ahead=hours_ahead,
+                daily_prediction=(results.get("daily_prediction") or {}).get("predicted_price") if results.get("daily_prediction") else None,
+                hourly_prediction=(results.get("hourly_prediction") or {}).get("predicted_price") if results.get("hourly_prediction") else None,
+                request_payload=payload,
+                response_payload=response_obj,
+            )
+    except Exception as e:
+        print(f"Prediction audit error: {e}")
+
+    return jsonify(response_obj)
 
 
 # Frontend
@@ -499,6 +673,7 @@ def serve_static(path: str):
 
 
 if __name__ == "__main__":
+    init_db()
     load_models()
     port = int(os.getenv("PORT", "5000"))
     app.run(host="0.0.0.0", port=port, debug=True)

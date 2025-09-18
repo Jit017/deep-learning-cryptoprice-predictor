@@ -3,51 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - FutureCoin</title>
+    <title>Register - FutureCoin</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .login-container { max-width: 420px; margin: 80px auto; padding: 24px; background: #0b1220; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);} 
-        .login-title { text-align: center; margin-bottom: 16px; }
-        .login-form label { display:block; margin: 12px 0 6px; }
-        .login-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #223; background: #0d1628; color: #fff; }
-        .login-actions { margin-top: 16px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
+        .auth-container { max-width: 480px; margin: 80px auto; padding: 24px; background: #0b1220; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);} 
+        .auth-title { text-align: center; margin-bottom: 16px; }
+        .auth-form label { display:block; margin: 12px 0 6px; }
+        .auth-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #223; background: #0d1628; color: #fff; }
+        .auth-actions { margin-top: 16px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
         .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
-        .btn-primary { background:#3b82f6; color:#fff; }
+        .btn-primary { background:#10b981; color:#fff; }
         .btn-secondary { background:#111827; color:#e5e7eb; border:1px solid #374151; }
         .error { color:#f87171; margin-top:10px; min-height:20px; }
         .muted { color:#9ca3af; font-size: 0.95rem; }
     </style>
     <script>
-        async function attemptLogin(ev){
+        async function register(ev){
             ev.preventDefault();
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value.trim();
-            const btn = document.getElementById('login-btn');
+            const btn = document.getElementById('reg-btn');
             const err = document.getElementById('error');
             err.textContent = '';
-            btn.disabled = true; btn.textContent = 'Signing in...';
+            btn.disabled = true; btn.textContent = 'Creating account...';
             try {
-                const res = await fetch('/api/login', {
+                const res = await fetch('/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: u, password: p })
                 });
                 const data = await res.json();
                 if (res.ok && data.ok){
-                    const to = new URLSearchParams(window.location.search).get('to') || 'predictions.html';
+                    const to = new URLSearchParams(window.location.search).get('to') || 'login.html';
                     window.location.href = to;
                 } else {
-                    err.textContent = data.error || 'Login failed';
+                    err.textContent = data.error || 'Registration failed';
                 }
             } catch(e){
                 err.textContent = 'Network error. Please try again.';
             } finally {
-                btn.disabled = false; btn.textContent = 'Login';
+                btn.disabled = false; btn.textContent = 'Register';
             }
         }
         window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('login-form').addEventListener('submit', attemptLogin);
+            document.getElementById('register-form').addEventListener('submit', register);
         });
     </script>
     </head>
@@ -67,23 +67,23 @@
         </div>
     </nav>
     <main>
-        <div class="login-container">
-            <div class="login-title">
-                <h2><i class="fas fa-user-lock"></i> Sign in</h2>
-                <p>Use the credentials configured in the server</p>
+        <div class="auth-container">
+            <div class="auth-title">
+                <h2><i class="fas fa-user-plus"></i> Create your account</h2>
+                <p>Register with your email and a password</p>
             </div>
-            <form id="login-form" class="login-form">
-                <label for="username">Username</label>
-                <input id="username" name="username" type="text" placeholder="admin" required>
+            <form id="register-form" class="auth-form">
+                <label for="username">Email</label>
+                <input id="username" name="username" type="email" placeholder="you@example.com" required>
                 <label for="password">Password</label>
-                <input id="password" name="password" type="password" placeholder="admin" required>
-                <div class="login-actions">
+                <input id="password" name="password" type="password" placeholder="At least 6 characters" required>
+                <div class="auth-actions">
                     <div>
-                        <button id="login-btn" class="btn btn-primary" type="submit">Login</button>
-                        <a class="btn btn-secondary" href="index.html">Cancel</a>
+                        <button id="reg-btn" class="btn btn-primary" type="submit">Register</button>
+                        <a class="btn btn-secondary" href="login.html">Back to Login</a>
                     </div>
                     <div class="muted">
-                        New here? <a href="register.html">Create an account</a>
+                        Already have an account? <a href="login.html">Sign in</a>
                     </div>
                 </div>
                 <div class="error" id="error"></div>
