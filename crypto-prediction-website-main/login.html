@@ -7,26 +7,52 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        .login-container { max-width: 420px; margin: 80px auto; padding: 24px; background: #0b1220; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);} 
-        .login-title { text-align: center; margin-bottom: 16px; }
-        .login-form label { display:block; margin: 12px 0 6px; }
-        .login-form input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #223; background: #0d1628; color: #fff; }
-        .login-actions { margin-top: 16px; display:flex; gap:12px; align-items:center; justify-content:space-between; }
-        .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
+        body { background: radial-gradient(1200px 800px at 10% -10%, rgba(59,130,246,0.15), transparent), radial-gradient(1200px 800px at 110% 110%, rgba(16,185,129,0.12), transparent), #0a1020; }
+        .login-container { max-width: 440px; margin: 80px auto; padding: 28px; background: linear-gradient(180deg, #0b1220, #0a1324); border: 1px solid #1f2a44; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.35);} 
+        .login-title { text-align: center; margin-bottom: 18px; }
+        .badge-logo { display:inline-flex; width:48px; height:48px; align-items:center; justify-content:center; border-radius:12px; background: rgba(59,130,246,0.15); color:#60a5fa; margin-bottom:8px; }
+        .login-form label { display:block; margin: 12px 0 6px; color:#cbd5e1; font-size:0.95rem; }
+        .input-wrap { position:relative; }
+        .input-wrap .icon { position:absolute; left:10px; top:50%; transform: translateY(-50%); color:#6b7280; }
+        .login-form input { width: 100%; padding: 10px 12px 10px 36px; border-radius: 10px; border: 1px solid #23304d; background: #0d1628; color: #fff; outline:none; transition: border .15s ease; }
+        .login-form input:focus { border-color:#3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        .toggle-pass { position:absolute; right:10px; top:50%; transform: translateY(-50%); color:#839; cursor:pointer; color:#9ca3af; }
+        .login-actions { margin-top: 18px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+        .btn { padding:10px 14px; border:none; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-weight:600; }
+        .btn[disabled] { opacity:0.7; cursor:not-allowed; }
         .btn-primary { background:#3b82f6; color:#fff; }
         .btn-secondary { background:#111827; color:#e5e7eb; border:1px solid #374151; }
-        .error { color:#f87171; margin-top:10px; min-height:20px; }
+        .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error { color:#fca5a5; margin-top:10px; min-height:20px; }
+        .hint { color:#9ca3af; font-size: 0.9rem; margin-top:6px; }
         .muted { color:#9ca3af; font-size: 0.95rem; }
+        .alert { margin-top:10px; padding:10px; border-radius:10px; background:#111827; border:1px solid #374151; color:#e5e7eb; display:none; }
     </style>
     <script>
+        function setError(msg){
+            const err = document.getElementById('error');
+            err.textContent = msg || '';
+        }
+        function setBanner(msg){
+            const b = document.getElementById('banner');
+            if(msg){ b.style.display='block'; b.textContent = msg; } else { b.style.display='none'; b.textContent=''; }
+        }
+        function togglePassword(){
+            const input = document.getElementById('password');
+            input.type = input.type === 'password' ? 'text' : 'password';
+            const eye = document.getElementById('eye');
+            eye.classList.toggle('fa-eye');
+            eye.classList.toggle('fa-eye-slash');
+        }
         async function attemptLogin(ev){
             ev.preventDefault();
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value.trim();
             const btn = document.getElementById('login-btn');
-            const err = document.getElementById('error');
-            err.textContent = '';
-            btn.disabled = true; btn.textContent = 'Signing in...';
+            setError(''); setBanner('');
+            if(!u || !p){ setError('Please enter username and password'); return; }
+            btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Signing in...';
             try {
                 const res = await fetch('/api/login', {
                     method: 'POST',
@@ -35,19 +61,21 @@
                 });
                 const data = await res.json();
                 if (res.ok && data.ok){
+                    setBanner('Login successful. Redirecting...');
                     const to = new URLSearchParams(window.location.search).get('to') || 'predictions.html';
-                    window.location.href = to;
+                    setTimeout(()=> window.location.href = to, 500);
                 } else {
-                    err.textContent = data.error || 'Login failed';
+                    setError(data.error || 'Invalid credentials');
                 }
             } catch(e){
-                err.textContent = 'Network error. Please try again.';
+                setError('Network error. Please try again.');
             } finally {
                 btn.disabled = false; btn.textContent = 'Login';
             }
         }
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('login-form').addEventListener('submit', attemptLogin);
+            document.getElementById('toggle-pass').addEventListener('click', togglePassword);
         });
     </script>
     </head>
@@ -62,6 +90,7 @@
                 <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
                 <li class="nav-item"><a href="predictions.html" class="nav-link">Predictions</a></li>
                 <li class="nav-item"><a href="compare.html" class="nav-link">Compare Models</a></li>
+                <li class="nav-item"><a href="history.html" class="nav-link">History</a></li>
                 <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
             </ul>
         </div>
@@ -69,14 +98,22 @@
     <main>
         <div class="login-container">
             <div class="login-title">
-                <h2><i class="fas fa-user-lock"></i> Sign in</h2>
-                <p>Use the credentials configured in the server</p>
+                <div class="badge-logo"><i class="fas fa-user-lock"></i></div>
+                <h2>Welcome back</h2>
+                <p class="muted">Sign in to continue to FutureCoin</p>
             </div>
             <form id="login-form" class="login-form">
                 <label for="username">Username</label>
-                <input id="username" name="username" type="text" placeholder="admin" required>
+                <div class="input-wrap">
+                    <i class="fas fa-user icon"></i>
+                    <input id="username" name="username" type="text" placeholder="your email or admin" autocomplete="username" required>
+                </div>
                 <label for="password">Password</label>
-                <input id="password" name="password" type="password" placeholder="admin" required>
+                <div class="input-wrap">
+                    <i class="fas fa-lock icon"></i>
+                    <input id="password" name="password" type="password" placeholder="your password" autocomplete="current-password" required>
+                    <button id="toggle-pass" type="button" class="toggle-pass" aria-label="Show/Hide password"><i id="eye" class="fas fa-eye"></i></button>
+                </div>
                 <div class="login-actions">
                     <div>
                         <button id="login-btn" class="btn btn-primary" type="submit">Login</button>
@@ -87,6 +124,7 @@
                     </div>
                 </div>
                 <div class="error" id="error"></div>
+                <div class="alert" id="banner"></div>
             </form>
         </div>
     </main>
