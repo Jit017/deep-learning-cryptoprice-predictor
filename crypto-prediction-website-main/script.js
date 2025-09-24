@@ -309,6 +309,9 @@ const cryptoData = {
   },
 }
 
+// Chart instances
+let predictionChart
+
 // Enhanced Predictions Page
 function initializePredictionsPage() {
   console.log("Initializing next-level predictions page...")
@@ -569,7 +572,7 @@ function showNotification(message, type = "info") {
 // Enhanced Simulation Function
 async function simulateAdvancedPrediction(crypto, days, hours, price) {
   // Simulate network delay with progress
-  await new Promise((resolve) => setTimeout(resolve, 2000))
+  await new Promise((resolve) => setTimeout(resolve, 800))
 
   const data = cryptoData[crypto]
   if (!data) throw new Error("Cryptocurrency not found")
@@ -672,6 +675,38 @@ function updatePredictionResults(data) {
 
   // Update forecast range with enhanced calculations
   updateForecastRange(data)
+
+  // Update chart
+  if (predictionChart) {
+    const labels = []
+    const actual = []
+    const predicted = []
+
+    // Build a short synthetic series around current price
+    const base = data.current_price || 0
+    for (let i = 0; i < 12; i++) {
+      labels.push(`${i}`)
+      const noise = (Math.random() - 0.5) * 0.02
+      actual.push(base * (1 + noise))
+    }
+
+    // Plot predicted point(s)
+    let predPointIndex = 11
+    let predValue = base
+    if (data.daily_prediction) {
+      predValue = data.daily_prediction.predicted_price
+    } else if (data.hourly_prediction) {
+      predValue = data.hourly_prediction.predicted_price
+    }
+    predicted.length = actual.length
+    for (let i = 0; i < predicted.length; i++) predicted[i] = null
+    predicted[predPointIndex] = predValue
+
+    predictionChart.data.labels = labels
+    predictionChart.data.datasets[0].data = actual
+    predictionChart.data.datasets[1].data = predicted
+    predictionChart.update()
+  }
 }
 
 // Enhanced Forecast Range Update
@@ -769,13 +804,104 @@ function initializePerformanceMonitoring() {
   })
 }
 
-// Placeholder functions for compatibility
+// Charts
 function initializePredictionChart() {
-  console.log("Advanced prediction chart initialized")
+  const ctx = document.getElementById("prediction-chart")?.getContext("2d")
+  if (!ctx || typeof Chart === "undefined") return
+
+  predictionChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: "Actual Price",
+          data: [],
+          borderColor: "#60a5fa",
+          backgroundColor: "rgba(96,165,250,0.15)",
+          tension: 0.3,
+          pointRadius: 0,
+        },
+        {
+          label: "AI Prediction",
+          data: [],
+          borderColor: "#34d399",
+          backgroundColor: "rgba(52,211,153,0.15)",
+          tension: 0.0,
+          pointRadius: 4,
+          showLine: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: "rgba(255,255,255,0.05)" } },
+        y: { grid: { color: "rgba(255,255,255,0.05)" } },
+      },
+      plugins: {
+        legend: { labels: { color: "#e5e7eb" } },
+        tooltip: { mode: "index", intersect: false },
+      },
+    },
+  })
 }
 
 function initializeComparisonPage() {
-  console.log("Advanced comparison page initialized")
+  // Comparison bar chart
+  const cmpCtx = document.getElementById("comparison-chart")?.getContext("2d")
+  if (cmpCtx && typeof Chart !== "undefined") {
+    const labels = Object.keys(cryptoData)
+    const hourly = labels.map((k) => cryptoData[k].hourlyModel.accuracy)
+    const daily = labels.map((k) => cryptoData[k].dailyModel.accuracy)
+
+    new Chart(cmpCtx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [
+          { label: "Hourly Accuracy %", data: hourly, backgroundColor: "rgba(52,211,153,0.6)" },
+          { label: "Daily Accuracy %", data: daily, backgroundColor: "rgba(96,165,250,0.6)" },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, max: 100 } },
+        plugins: { legend: { labels: { color: "#e5e7eb" } } },
+      },
+    })
+  }
+
+  // Accuracy distribution radar chart
+  const accCtx = document.getElementById("accuracy-distribution-chart")?.getContext("2d")
+  if (accCtx && typeof Chart !== "undefined") {
+    const labels = Object.keys(cryptoData)
+    const accuracies = labels.map((k) => cryptoData[k].hourlyModel.accuracy)
+
+    new Chart(accCtx, {
+      type: "radar",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Hourly Accuracy %",
+            data: accuracies,
+            backgroundColor: "rgba(0,245,255,0.2)",
+            borderColor: "rgba(0,245,255,0.8)",
+            pointBackgroundColor: "#00f5ff",
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { r: { angleLines: { color: "rgba(255,255,255,0.1)" }, grid: { color: "rgba(255,255,255,0.1)" }, suggestedMin: 0, suggestedMax: 100 } },
+        plugins: { legend: { labels: { color: "#e5e7eb" } } },
+      },
+    })
+  }
 }
 
 // Add CSS animations
