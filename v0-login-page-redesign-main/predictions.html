@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictions - FutureCoin AI Crypto Predictor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-chart-line"></i>
+                <span>FutureCoin</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="predictions.html" class="nav-link active">Predictions</a>
+                </li>
+                <li class="nav-item">
+                    <a href="compare.html" class="nav-link">Compare Models</a>
+                </li>
+                <li class="nav-item">
+                    <a href="history.html" class="nav-link">History</a>
+                </li>
+                <li class="nav-item">
+                    <a href="about.html" class="nav-link">About</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="predictions-main">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <i class="fas fa-crystal-ball"></i>
+                    AI Price Predictions
+                </h1>
+                <p class="page-subtitle">Get AI-powered forecasts for your favorite cryptocurrencies</p>
+            </div>
+
+            <div class="prediction-controls">
+                <div class="control-group">
+                    <label for="crypto-select">
+                        <i class="fas fa-coins"></i>
+                        Select Cryptocurrency
+                    </label>
+                    <select id="crypto-select" class="control-input">
+                        <option value="BTC">Bitcoin (BTC)</option>
+                        <option value="ETH">Ethereum (ETH)</option>
+                        <option value="ADA">Cardano (ADA)</option>
+                        <option value="BNB">Binance Coin (BNB)</option>
+                        <option value="DOGE">Dogecoin (DOGE)</option>
+                        <option value="SOL">Solana (SOL)</option>
+                        <option value="MATIC">Polygon (MATIC)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="days-ahead">
+                        <i class="fas fa-calendar-day"></i>
+                        Days Ahead (0-30)
+                    </label>
+                    <input type="number" id="days-ahead" class="control-input" placeholder="0" min="0" max="30" value="0">
+                </div>
+
+                <div class="control-group">
+                    <label for="hours-ahead">
+                        <i class="fas fa-clock"></i>
+                        Hours Ahead (0-23)
+                    </label>
+                    <input type="number" id="hours-ahead" class="control-input" placeholder="0" min="0" max="23" value="0">
+                </div>
+
+                <div class="control-group">
+                    <label for="current-price">
+                        <i class="fas fa-dollar-sign"></i>
+                        Current Price (USD) - Optional
+                    </label>
+                    <input type="number" id="current-price" class="control-input" placeholder="Auto-fetch if empty" step="0.01">
+                </div>
+
+                <button id="predict-btn" class="btn btn-primary">
+                    <i class="fas fa-magic"></i>
+                    Generate Prediction
+                </button>
+            </div>
+
+            <div class="prediction-results">
+                <div class="results-grid">
+                    <div class="result-card current-price-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> Current Price</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="price-display">
+                                <span class="currency-symbol" id="current-symbol">BTC</span>
+                                <span class="price-value" id="current-price-display">$0.00</span>
+                            </div>
+                            <div class="price-change" id="price-change">
+                                <span class="change-value">+0.00%</span>
+                                <span class="change-period">24h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-card prediction-card" id="daily-prediction-card" style="display: none;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-calendar-day"></i> Daily Prediction (INR)</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="price-display">
+                                <span class="currency-symbol" id="daily-prediction-symbol">BTC</span>
+                                <span class="price-value" id="daily-prediction-price">₹0.00</span>
+                            </div>
+                            <div class="prediction-info">
+                                <span class="info-label">Days Ahead:</span>
+                                <span class="info-value" id="daily-days-ahead">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-card prediction-card" id="hourly-prediction-card" style="display: none;">
+                        <div class="card-header">
+                            <h3><i class="fas fa-clock"></i> Hourly Prediction (USDT)</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="price-display">
+                                <span class="currency-symbol" id="hourly-prediction-symbol">BTC</span>
+                                <span class="price-value" id="hourly-prediction-price">$0.00</span>
+                            </div>
+                            <div class="prediction-info">
+                                <span class="info-label">Hours Ahead:</span>
+                                <span class="info-value" id="hourly-hours-ahead">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-card forecast-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-trending-up"></i> Price Forecast</h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="forecast-period" id="forecast-period">Next 2 Hours</div>
+                            <div class="forecast-range">
+                                <div class="forecast-item">
+                                    <span class="forecast-label">Low:</span>
+                                    <span class="forecast-value" id="forecast-low">$0.00</span>
+                                </div>
+                                <div class="forecast-item">
+                                    <span class="forecast-label">High:</span>
+                                    <span class="forecast-value" id="forecast-high">$0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-area"></i> Actual vs Predicted Prices</h3>
+                        <div class="chart-legend">
+                            <div class="legend-item">
+                                <div class="legend-color actual"></div>
+                                <span>Actual Price</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color predicted"></div>
+                                <span>AI Prediction</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="prediction-chart"></canvas>
+                    </div>
+                </div>
+
+                <div class="model-metrics">
+                    <h3><i class="fas fa-chart-bar"></i> Model Performance</h3>
+                    <div class="metrics-grid">
+                        <div class="metric-item">
+                            <div class="metric-label">Mean Absolute Error</div>
+                            <div class="metric-value" id="mae-value">$0.00</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Root Mean Square Error</div>
+                            <div class="metric-value" id="rmse-value">$0.00</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">R² Score</div>
+                            <div class="metric-value" id="r2-value">0.000</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-label">Accuracy</div>
+                            <div class="metric-value" id="accuracy-value">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <i class="fas fa-chart-line"></i>
+                        <span>FutureCoin</span>
+                    </div>
+                    <p>AI-powered cryptocurrency price predictions</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="predictions.html">Predictions</a></li>
+                        <li><a href="compare.html">Compare Models</a></li>
+                        <li><a href="about.html">About</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <p><i class="fas fa-envelope"></i> info@futurecoin.ai</p>
+                    <p><i class="fab fa-github"></i> <a href="#" target="_blank">GitHub Repository</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 FutureCoin. Built with AI and passion for crypto forecasting.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Simple test to see if JavaScript is working
+        console.log('Predictions page loaded');
+        console.log('Elements check:');
+        console.log('crypto-select:', !!document.getElementById('crypto-select'));
+        console.log('days-ahead:', !!document.getElementById('days-ahead'));
+        console.log('hours-ahead:', !!document.getElementById('hours-ahead'));
+        console.log('predict-btn:', !!document.getElementById('predict-btn'));
+        
+        // Test button click
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, testing button...');
+            const btn = document.getElementById('predict-btn');
+            if (btn) {
+                console.log('Button found, adding test click handler');
+                btn.addEventListener('click', function() {
+                    console.log('Button clicked!');
+                    alert('Button click detected! Check console for details.');
+                });
+            } else {
+                console.error('Button not found!');
+            }
+        });
+    </script>
+</body>
+</html>
