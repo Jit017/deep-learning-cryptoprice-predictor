@@ -80,6 +80,8 @@
                         <option value="rmse">Root Mean Square Error</option>
                     </select>
                 </div>
+
+                <button id="compare-btn" class="btn btn-primary"><i class="fas fa-sliders-h"></i> Compare</button>
             </div>
 
             <div class="comparison-overview">
@@ -202,40 +204,6 @@
                     </table>
                 </div>
             </div>
-
-            <div class="insights-section">
-                <h3><i class="fas fa-lightbulb"></i> Key Insights</h3>
-                <div class="insights-grid">
-                    <div class="insight-card">
-                        <div class="insight-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <h4>Hourly Models Excel</h4>
-                        <p>Hourly prediction models consistently outperform daily models across all cryptocurrencies, with an average accuracy improvement of 13.8%.</p>
-                    </div>
-                    <div class="insight-card">
-                        <div class="insight-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <h4>Higher R² Scores</h4>
-                        <p>Hourly models achieve better R² scores, indicating stronger correlation between predicted and actual values in shorter timeframes.</p>
-                    </div>
-                    <div class="insight-card">
-                        <div class="insight-icon">
-                            <i class="fas fa-target"></i>
-                        </div>
-                        <h4>Lower Error Rates</h4>
-                        <p>Mean Absolute Error and Root Mean Square Error are significantly lower in hourly models, providing more precise predictions.</p>
-                    </div>
-                    <div class="insight-card">
-                        <div class="insight-icon">
-                            <i class="fas fa-coins"></i>
-                        </div>
-                        <h4>Consistent Across Coins</h4>
-                        <p>The performance advantage of hourly models is consistent across all supported cryptocurrencies, from Bitcoin to altcoins.</p>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
 
@@ -269,6 +237,27 @@
         </div>
     </footer>
 
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top" style="position: fixed; right: 16px; bottom: 24px; display:none; border:none; border-radius:9999px; padding:12px 14px; background:#0f172a; color:#e5e7eb; border:1px solid #334155; cursor:pointer; z-index:9999;"><i class="fas fa-arrow-up"></i></button>
+
     <script src="script.js"></script>
+    <script>
+        // Back to top visibility
+        const topBtn = document.getElementById('back-to-top');
+        window.addEventListener('scroll', () => {
+            topBtn.style.display = window.scrollY > 300 ? 'inline-flex' : 'none';
+        });
+        topBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+        // Compare button triggers re-render
+        const cmpBtn = document.getElementById('compare-btn');
+        if (cmpBtn) {
+            cmpBtn.addEventListener('click', () => {
+                // Reinitialize comparison charts by reloading the section
+                if (typeof initializeComparisonPage === 'function') {
+                    initializeComparisonPage();
+                }
+                window.scrollTo({ top: document.querySelector('.comparison-charts').offsetTop - 80, behavior: 'smooth' });
+            });
+        }
+    </script>
 </body>
 </html>

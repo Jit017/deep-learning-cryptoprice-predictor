@@ -457,6 +457,14 @@
         </div>
     </footer>
 
+    <button id="back-to-top" class="back-to-top" aria-label="Back to top" style="position: fixed; right: 16px; bottom: 24px; display:none; border:none; border-radius:9999px; padding:12px 14px; background:#0f172a; color:#e5e7eb; border:1px solid #334155; cursor:pointer; z-index:9999;"><i class="fas fa-arrow-up"></i></button>
     <script src="script.js"></script>
+    <script>
+        const topBtn = document.getElementById('back-to-top');
+        window.addEventListener('scroll', () => {
+            topBtn.style.display = window.scrollY > 300 ? 'inline-flex' : 'none';
+        });
+        topBtn.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+    </script>
 </body>
 </html>
