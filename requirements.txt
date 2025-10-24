@@ -1,10 +1,10 @@
 flask==3.0.3
-numpy
+numpy>=1.21.0,<2.0.0
 joblib==1.4.2
 pandas
 yfinance
 python-dotenv
 requests
-tensorflow==2.12.0
+tensorflow>=2.16.0,<2.21.0
 celery==5.4.0
 redis==5.0.7

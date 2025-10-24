@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "app.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "app.py"
+    }
+  ],
+  "env": {
+    "FLASK_DEBUG": "0",
+    "APP_USERNAME": "admin",
+    "APP_PASSWORD": "admin",
+    "FLASK_SECRET_KEY": "production-secret-key-change-this"
+  }
+}
