@@ -1,133 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - FutureCoin</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body { background: radial-gradient(1200px 800px at 10% -10%, rgba(59,130,246,0.15), transparent), radial-gradient(1200px 800px at 110% 110%, rgba(16,185,129,0.12), transparent), #0a1020; }
-        .login-container { max-width: 440px; margin: 80px auto; padding: 28px; background: linear-gradient(180deg, #0b1220, #0a1324); border: 1px solid #1f2a44; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.35);} 
-        .login-title { text-align: center; margin-bottom: 18px; }
-        .badge-logo { display:inline-flex; width:48px; height:48px; align-items:center; justify-content:center; border-radius:12px; background: rgba(59,130,246,0.15); color:#60a5fa; margin-bottom:8px; }
-        .login-form label { display:block; margin: 12px 0 6px; color:#cbd5e1; font-size:0.95rem; }
-        .input-wrap { position:relative; }
-        .input-wrap .icon { position:absolute; left:10px; top:50%; transform: translateY(-50%); color:#6b7280; }
-        .login-form input { width: 100%; padding: 10px 12px 10px 36px; border-radius: 10px; border: 1px solid #23304d; background: #0d1628; color: #fff; outline:none; transition: border .15s ease; }
-        .login-form input:focus { border-color:#3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-        .toggle-pass { position:absolute; right:10px; top:50%; transform: translateY(-50%); color:#839; cursor:pointer; color:#9ca3af; }
-        .login-actions { margin-top: 18px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-        .btn { padding:10px 14px; border:none; border-radius:10px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-weight:600; }
-        .btn[disabled] { opacity:0.7; cursor:not-allowed; }
-        .btn-primary { background:#3b82f6; color:#fff; }
-        .btn-secondary { background:#111827; color:#e5e7eb; border:1px solid #374151; }
-        .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.35); border-top-color:#fff; border-radius:50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .error { color:#fca5a5; margin-top:10px; min-height:20px; }
-        .hint { color:#9ca3af; font-size: 0.9rem; margin-top:6px; }
-        .muted { color:#9ca3af; font-size: 0.95rem; }
-        .alert { margin-top:10px; padding:10px; border-radius:10px; background:#111827; border:1px solid #374151; color:#e5e7eb; display:none; }
-    </style>
-    <script>
-        function setError(msg){
-            const err = document.getElementById('error');
-            err.textContent = msg || '';
-        }
-        function setBanner(msg){
-            const b = document.getElementById('banner');
-            if(msg){ b.style.display='block'; b.textContent = msg; } else { b.style.display='none'; b.textContent=''; }
-        }
-        function togglePassword(){
-            const input = document.getElementById('password');
-            input.type = input.type === 'password' ? 'text' : 'password';
-            const eye = document.getElementById('eye');
-            eye.classList.toggle('fa-eye');
-            eye.classList.toggle('fa-eye-slash');
-        }
-        async function attemptLogin(ev){
-            ev.preventDefault();
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value.trim();
-            const btn = document.getElementById('login-btn');
-            setError(''); setBanner('');
-            if(!u || !p){ setError('Please enter username and password'); return; }
-            btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Signing in...';
-            try {
-                const res = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: u, password: p })
-                });
-                const data = await res.json();
-                if (res.ok && data.ok){
-                    setBanner('Login successful. Redirecting...');
-                    const to = new URLSearchParams(window.location.search).get('to') || 'predictions.html';
-                    setTimeout(()=> window.location.href = to, 500);
-                } else {
-                    setError(data.error || 'Invalid credentials');
-                }
-            } catch(e){
-                setError('Network error. Please try again.');
-            } finally {
-                btn.disabled = false; btn.textContent = 'Login';
-            }
-        }
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('login-form').addEventListener('submit', attemptLogin);
-            document.getElementById('toggle-pass').addEventListener('click', togglePassword);
-        });
-    </script>
-    </head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - FutureCoin</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    /* Global Reset */
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins', sans-serif; }
+
+    body {
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      background: radial-gradient(1200px 800px at 10% -10%, rgba(59,130,246,0.15), transparent),
+                  radial-gradient(1200px 800px at 110% 110%, rgba(16,185,129,0.12), transparent),
+                  #0a1020;
+      color:#fff;
+    }
+
+    /* Login Container */
+    .login-container {
+      max-width:420px;
+      width:90%;
+      padding:32px;
+      background:rgba(15,25,45,0.65);
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.1);
+      box-shadow:0 12px 40px rgba(0,0,0,0.4);
+      backdrop-filter: blur(12px);
+      animation: fadeIn 0.7s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from {opacity:0; transform:translateY(20px);}
+      to {opacity:1; transform:translateY(0);}
+    }
+
+    /* Title */
+    .login-title { text-align:center; margin-bottom:24px; }
+    .badge-logo {
+      display:inline-flex;
+      width:56px; height:56px;
+      align-items:center; justify-content:center;
+      border-radius:14px;
+      background:rgba(59,130,246,0.15);
+      color:#60a5fa; font-size:1.4rem;
+      margin-bottom:12px;
+    }
+    .login-title h2 { font-size:1.6rem; margin-bottom:6px; }
+    .login-title p { color:#9ca3af; font-size:0.95rem; }
+
+    /* Form */
+    .login-form label { display:block; margin:14px 0 6px; color:#cbd5e1; font-size:0.95rem; }
+    .input-wrap { position:relative; }
+    .input-wrap .icon { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#6b7280; font-size:0.9rem; }
+    .login-form input {
+      width:100%;
+      padding:12px 14px 12px 40px;
+      border-radius:12px;
+      border:1px solid #23304d;
+      background:#0d1628;
+      color:#fff;
+      outline:none;
+      font-size:0.95rem;
+      transition:all .2s ease;
+    }
+    .login-form input:focus {
+      border-color:#3b82f6;
+      box-shadow:0 0 8px rgba(59,130,246,0.4);
+    }
+
+    /* Password Toggle */
+    .toggle-pass {
+      position:absolute;
+      right:12px;
+      top:50%; transform:translateY(-50%);
+      background:none; border:none;
+      color:#9ca3af;
+      cursor:pointer;
+      font-size:0.95rem;
+      transition:color .2s ease;
+    }
+    .toggle-pass:hover { color:#3b82f6; }
+
+    /* Actions */
+    .login-actions { margin-top:22px; display:flex; flex-direction:column; gap:14px; }
+    .btn {
+      padding:12px 16px;
+      border:none; border-radius:12px;
+      font-weight:600; font-size:1rem;
+      cursor:pointer;
+      display:inline-flex; justify-content:center; align-items:center;
+      gap:8px;
+      transition: all 0.25s ease;
+    }
+    .btn-primary {
+      background:linear-gradient(90deg, #3b82f6, #2563eb);
+      color:#fff;
+      box-shadow:0 0 12px rgba(59,130,246,0.5);
+    }
+    .btn-primary:hover { transform:translateY(-2px); box-shadow:0 0 16px rgba(59,130,246,0.7); }
+    .btn-secondary {
+      background:#111827;
+      color:#e5e7eb;
+      border:1px solid #374151;
+    }
+    .btn-secondary:hover { background:#1f2937; }
+
+    .muted { text-align:center; font-size:0.9rem; color:#9ca3af; }
+    .muted a { color:#3b82f6; text-decoration:none; }
+    .muted a:hover { text-decoration:underline; }
+
+    .error { color:#fca5a5; margin-top:12px; font-size:0.9rem; text-align:center; }
+    .alert {
+      margin-top:12px; padding:12px;
+      border-radius:12px;
+      background:#1e293b;
+      border:1px solid #374151;
+      color:#e5e7eb;
+      display:none;
+      text-align:center;
+    }
+  </style>
+</head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-logo">
-                <i class="fas fa-chart-line"></i>
-                <span>FutureCoin</span>
-            </div>
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-                <li class="nav-item"><a href="predictions.html" class="nav-link">Predictions</a></li>
-                <li class="nav-item"><a href="compare.html" class="nav-link">Compare Models</a></li>
-                <li class="nav-item"><a href="history.html" class="nav-link">History</a></li>
-                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
-            </ul>
-        </div>
-    </nav>
-    <main>
-        <div class="login-container">
-            <div class="login-title">
-                <div class="badge-logo"><i class="fas fa-user-lock"></i></div>
-                <h2>Welcome back</h2>
-                <p class="muted">Sign in to continue to FutureCoin</p>
-            </div>
-            <form id="login-form" class="login-form">
-                <label for="username">Username</label>
-                <div class="input-wrap">
-                    <i class="fas fa-user icon"></i>
-                    <input id="username" name="username" type="text" placeholder="your email or admin" autocomplete="username" required>
-                </div>
-                <label for="password">Password</label>
-                <div class="input-wrap">
-                    <i class="fas fa-lock icon"></i>
-                    <input id="password" name="password" type="password" placeholder="your password" autocomplete="current-password" required>
-                    <button id="toggle-pass" type="button" class="toggle-pass" aria-label="Show/Hide password"><i id="eye" class="fas fa-eye"></i></button>
-                </div>
-                <div class="login-actions">
-                    <div>
-                        <button id="login-btn" class="btn btn-primary" type="submit">Login</button>
-                        <a class="btn btn-secondary" href="index.html">Cancel</a>
-                    </div>
-                    <div class="muted">
-                        New here? <a href="register.html">Create an account</a>
-                    </div>
-                </div>
-                <div class="error" id="error"></div>
-                <div class="alert" id="banner"></div>
-            </form>
-        </div>
-    </main>
-    <footer class="footer"><div class="container"><div class="footer-bottom"><p>&copy; 2024 FutureCoin</p></div></div></footer>
+  <div class="login-container">
+    <div class="login-title">
+      <div class="badge-logo"><i class="fas fa-user-lock"></i></div>
+      <h2>Welcome Back</h2>
+      <p>Sign in to continue to <strong>FutureCoin</strong></p>
+    </div>
+    <form id="login-form" class="login-form">
+      <label for="username">Username</label>
+      <div class="input-wrap">
+        <i class="fas fa-user icon"></i>
+        <input id="username" type="text" placeholder="Your email or admin" required>
+      </div>
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock icon"></i>
+        <input id="password" type="password" placeholder="Your password" required>
+        <button id="toggle-pass" type="button" class="toggle-pass"><i id="eye" class="fas fa-eye"></i></button>
+      </div>
+      <div class="login-actions">
+        <button id="login-btn" class="btn btn-primary" type="submit">Login</button>
+        <a class="btn btn-secondary" href="index.html">Cancel</a>
+        <div class="muted">New here? <a href="register.html">Create an account</a></div>
+      </div>
+      <div class="error" id="error"></div>
+      <div class="alert" id="banner"></div>
+    </form>
+  </div>
 </body>
 </html>

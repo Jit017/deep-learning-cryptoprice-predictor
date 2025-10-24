@@ -5,7 +5,7 @@ import os
 import json
 import numpy as np
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, session, render_template_string
+from flask import Blueprint, request, jsonify, session, render_template_string, send_from_directory, abort
 from werkzeug.security import check_password_hash, generate_password_hash
 from typing import Dict, Any, Optional
 
@@ -317,25 +317,26 @@ def get_current_price(symbol):
 # Static file serving
 @api.route("/")
 def index():
-    """Serve the main index page."""
+    """Serve the main index page with correct content type."""
     try:
         index_path = FRONTEND_DIR / "index.html"
         if index_path.exists():
-            return index_path.read_text(encoding="utf-8")
+            return send_from_directory(str(FRONTEND_DIR), "index.html")
         else:
-            return "Frontend files not found", 404
+            abort(404)
     except Exception as e:
         return f"Error serving index: {e}", 500
 
 
 @api.route("/<path:filename>")
 def serve_static(filename):
-    """Serve static files from the frontend directory."""
+    """Serve static files from the frontend directory with correct MIME types."""
     try:
         file_path = FRONTEND_DIR / filename
         if file_path.exists() and file_path.is_file():
-            return file_path.read_text(encoding="utf-8")
+            # Use send_from_directory to set appropriate headers and support binary files
+            return send_from_directory(str(FRONTEND_DIR), filename)
         else:
-            return "File not found", 404
+            abort(404)
     except Exception as e:
         return f"Error serving file: {e}", 500
