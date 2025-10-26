@@ -2,6 +2,7 @@
 Configuration management for FutureCoin application.
 """
 import os
+import secrets
 from pathlib import Path
 
 # Base directory
@@ -21,7 +22,7 @@ def load_config():
         "HOURS_AHEAD_MAX": int(os.getenv("HOURS_AHEAD_MAX", "23")),
         "DAILY_MODEL_CURRENCY": os.getenv("DAILY_MODEL_CURRENCY", "INR"),
         "HOURLY_MODEL_CURRENCY": os.getenv("HOURLY_MODEL_CURRENCY", "USDT"),
-        "FLASK_SECRET_KEY": os.getenv("FLASK_SECRET_KEY", "change-this-secret-in-env"),
+        "FLASK_SECRET_KEY": os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32)),
         "APP_USERNAME": os.getenv("APP_USERNAME", "admin"),
         "APP_PASSWORD": os.getenv("APP_PASSWORD", "admin"),
         "PORT": int(os.getenv("PORT", "5000")),
